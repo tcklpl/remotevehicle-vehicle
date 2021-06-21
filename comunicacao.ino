@@ -1,6 +1,8 @@
 #include <WiFi.h>
 #include <WiFiUdp.h>
+#include <base64.h>
 #include "wifilogin.h"
+#include "camera.h"
 
 const char* ssid = WIFI_LOGIN_SSID;
 const char* password = WIFI_LOGIN_PASS;
@@ -68,6 +70,9 @@ void setup() {
 
   Serial.println("initializing tcp server...");
   server.begin();
+
+  Serial.println("setting up camera...");
+  setup_camera();
   
   current_status = STATUS_AWAITING_TCP_CONNECTION_REQUEST;
   randomSeed(millis());
@@ -101,6 +106,24 @@ void handle_heartbeat() {
   }
 }
 
+void take_and_send_image() {
+  if (current_status != STATUS_CONNECTED_TO_CONTROLLER) return;
+
+  take_photo();
+  Serial.print("Sending ");
+  Serial.print(camera_image->len);
+  Serial.print(" bytes ");
+  Serial.print(camera_image->width);
+  Serial.print("x");
+  Serial.println(camera_image->height);
+
+  sprintf(tcp_out_buffer, "DTDC%d", camera_image->len);
+  controladora.write(tcp_out_buffer);
+  controladora.write(camera_image->buf, camera_image->len);
+  
+  esp_camera_fb_return(camera_image);
+}
+
 void loop() {
   switch (current_status) {
     case STATUS_AWAITING_TCP_CONNECTION_REQUEST: {
@@ -118,6 +141,7 @@ void loop() {
         if (controladora.connected()) {
           uint8_t s = 0;
           while (controladora.available()) tcp_in_buffer[s++] = controladora.read();
+          
           if (strcmp(tcp_in_buffer, "CFRC") == 0) {
             Serial.println("Recieved TCP request, switching to slave mode");
             current_status = STATUS_CONNECTED_TO_CONTROLLER;
@@ -132,8 +156,13 @@ void loop() {
       if (controladora.connected()) {
         uint8_t s = 0;
         while (controladora.available()) tcp_in_buffer[s++] = controladora.read();
+        
         if (strcmp(tcp_in_buffer, "CFHB") == 0) {
           last_recieved_heartbeat = millis();
+        }
+
+        if (strcmp(tcp_in_buffer, "DTRC") == 0) {
+          take_and_send_image();
         }
       }
       break;
