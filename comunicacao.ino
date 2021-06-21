@@ -9,7 +9,7 @@ const int communication_port = 6887;
 WiFiUDP Udp;
 WiFiServer server(communication_port);
 WiFiClient controladora;
-char tcp_in_buffer[10], tcp_out_buffer[10];
+char tcp_in_buffer[20], tcp_out_buffer[20];
 
 #define STATUS_BOOTING_UP                       0
 #define STATUS_AWAITING_TCP_CONNECTION_REQUEST  1
@@ -19,7 +19,6 @@ uint8_t current_status;
 unsigned long last_sent_broadcast = 0;
 IPAddress broadcastIP;
 
-uint16_t controller_generated_id = 0;
 unsigned long last_sent_heartbeat = 0;
 unsigned long last_recieved_heartbeat = 0;
 
@@ -79,7 +78,6 @@ void disconnect() {
   current_status = STATUS_AWAITING_TCP_CONNECTION_REQUEST;
   last_sent_heartbeat = 0;
   last_recieved_heartbeat = 0;
-  controller_generated_id = 0;
   Serial.println("Disconnected, broadcasting to network...");
 }
 
@@ -121,20 +119,9 @@ void loop() {
           uint8_t s = 0;
           while (controladora.available()) tcp_in_buffer[s++] = controladora.read();
           if (strcmp(tcp_in_buffer, "CFRC") == 0) {
-            // check if there is no controller connected at the moment
-            if (controller_generated_id == 0) {
-              Serial.println("Recieved TCP request, switching to slave mode");
-              current_status = STATUS_CONNECTED_TO_CONTROLLER;
-              
-              controller_generated_id = random(20000, 65536);
-              strcat(tcp_out_buffer, "CFID");
-              strcat(tcp_out_buffer, controller_generated_id);
-              controladora.write(tcp_out_buffer);
-              
-              controladora.write("CFCK");
-            } else {
-              controladora.write("ER01");
-            }
+            Serial.println("Recieved TCP request, switching to slave mode");
+            current_status = STATUS_CONNECTED_TO_CONTROLLER;
+            controladora.write("CFCK");
           }
         }
       }
@@ -153,5 +140,7 @@ void loop() {
     }
     default: break;
   }
+
+  clear_buffers();
   
 }
