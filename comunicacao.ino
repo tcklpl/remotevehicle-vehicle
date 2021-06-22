@@ -1,6 +1,5 @@
 #include <WiFi.h>
 #include <WiFiUdp.h>
-#include <base64.h>
 #include "wifilogin.h"
 #include "camera.h"
 
@@ -72,7 +71,7 @@ void setup() {
   server.begin();
 
   Serial.println("setting up camera...");
-  setup_camera();
+  setup_camera(FRAMESIZE_HD);
   
   current_status = STATUS_AWAITING_TCP_CONNECTION_REQUEST;
   randomSeed(millis());
@@ -117,7 +116,7 @@ void take_and_send_image() {
   Serial.print("x");
   Serial.println(camera_image->height);
 
-  sprintf(tcp_out_buffer, "DTDC%d", camera_image->len);
+  sprintf(tcp_out_buffer, "DTDC%6d", camera_image->len);
   controladora.write(tcp_out_buffer);
   controladora.write(camera_image->buf, camera_image->len);
   
@@ -128,8 +127,9 @@ void loop() {
   switch (current_status) {
     case STATUS_AWAITING_TCP_CONNECTION_REQUEST: {
 
-      // send broadcast every 2s
-      if (millis() - last_sent_broadcast >= 2000) {
+      // send broadcast every 3s
+      if (millis() - last_sent_broadcast >= 3000) {
+        last_sent_broadcast = millis();
         Udp.beginPacket(broadcastIP, communication_port);
         Udp.print("CFBC");
         Udp.endPacket();

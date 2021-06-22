@@ -18,9 +18,25 @@
 #define HREF_GPIO_NUM     23
 #define PCLK_GPIO_NUM     22
 
-camera_fb_t *camera_image = NULL;
+#define CAMERA_RESOLUTION_96_96 1
+#define CAMERA_RESOLUTION_160_120 2
+#define CAMERA_RESOLUTION_176_144 3
+#define CAMERA_RESOLUTION_240_176 4
+#define CAMERA_RESOLUTION_240_240 5
+#define CAMERA_RESOLUTION_320_240 6
+#define CAMERA_RESOLUTION_400_296 7
+#define CAMERA_RESOLUTION_480_320 8
+#define CAMERA_RESOLUTION_640_480 9
+#define CAMERA_RESOLUTION_800_600 10
+#define CAMERA_RESOLUTION_1024_768 11
+#define CAMERA_RESOLUTION_1280_720 12
+#define CAMERA_RESOLUTION_1280_1024 13
+#define CAMERA_RESOLUTION_1600_1200 14
 
-void setup_camera() {
+camera_fb_t *camera_image = NULL;
+sensor_t *camera_sensor = NULL;
+
+void setup_camera(framesize_t frame_size) {
   camera_config_t config;
   config.ledc_channel = LEDC_CHANNEL_0;
   config.ledc_timer = LEDC_TIMER_0;
@@ -44,11 +60,11 @@ void setup_camera() {
   config.pixel_format = PIXFORMAT_JPEG;
 
   if(psramFound()){
-    config.frame_size = FRAMESIZE_UXGA; // FRAMESIZE_ + QVGA|CIF|VGA|SVGA|XGA|SXGA|UXGA
+    config.frame_size = frame_size; // FRAMESIZE_ + QVGA|CIF|VGA|SVGA|XGA|SXGA|UXGA
     config.jpeg_quality = 10;
     config.fb_count = 2;
   } else {
-    config.frame_size = FRAMESIZE_SVGA;
+    config.frame_size = frame_size;
     config.jpeg_quality = 12;
     config.fb_count = 1;
   }
@@ -58,6 +74,60 @@ void setup_camera() {
   if (err != ESP_OK) {
     Serial.printf("Camera init failed with error 0x%x", err);
   }
+
+  camera_sensor = esp_camera_sensor_get();
+}
+
+void set_camera_resolution(int resolution_type) {
+  framesize_t frame_size;
+  switch (resolution_type) {
+    case 1:
+      frame_size = FRAMESIZE_96X96;
+      break;
+    case 2:
+      frame_size = FRAMESIZE_QQVGA;
+      break;
+    case 3:
+      frame_size = FRAMESIZE_QCIF;
+      break;
+    case 4:
+      frame_size = FRAMESIZE_HQVGA;
+      break;
+    case 5:
+      frame_size = FRAMESIZE_240X240;
+      break;
+    case 6:
+      frame_size = FRAMESIZE_QVGA;
+      break;
+    case 7:
+      frame_size = FRAMESIZE_CIF;
+      break;
+    case 8:
+      frame_size = FRAMESIZE_HVGA;
+      break;
+    case 9:
+      frame_size = FRAMESIZE_VGA;
+      break;
+    case 10:
+      frame_size = FRAMESIZE_SVGA;
+      break;
+    case 11:
+      frame_size = FRAMESIZE_XGA;
+      break;
+    case 12:
+      frame_size = FRAMESIZE_HD;
+      break;
+    case 13:
+      frame_size = FRAMESIZE_SXGA;
+      break;
+    case 14:
+      frame_size = FRAMESIZE_UXGA;
+      break;
+    default:
+      frame_size = FRAMESIZE_HD;
+      break;
+  }
+  setup_camera(frame_size);
 }
 
 void take_photo() {
