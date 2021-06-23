@@ -9,9 +9,10 @@ const char* password = WIFI_LOGIN_PASS;
 
 const uint16_t communication_tcp_port = 6887;
 const uint16_t communication_udp_port = 6888;
+const uint16_t communication_img_port = 6889;
 WiFiUDP Udp;
-WiFiServer server(communication_tcp_port);
-WiFiClient controladora;
+WiFiServer server(communication_tcp_port), img_server(communication_img_port);
+WiFiClient controladora, controladora_img;
 char tcp_in_buffer[20], tcp_out_buffer[20];
 
 #define STATUS_BOOTING_UP                       0
@@ -20,7 +21,7 @@ char tcp_in_buffer[20], tcp_out_buffer[20];
 
 uint8_t current_status;
 unsigned long last_sent_broadcast = 0;
-IPAddress broadcastIP;
+IPAddress broadcastIP, controllerIP;
 
 unsigned long last_sent_heartbeat = 0;
 unsigned long last_recieved_heartbeat = 0;
@@ -71,6 +72,7 @@ void setup() {
 
     Serial.println("initializing tcp server...");
     server.begin();
+    img_server.begin();
 
     Serial.println("setting up camera...");
     setup_camera(FRAMESIZE_HD);
@@ -84,6 +86,8 @@ void disconnect() {
     current_status = STATUS_AWAITING_TCP_CONNECTION_REQUEST;
     last_sent_heartbeat = 0;
     last_recieved_heartbeat = 0;
+    controladora.stop();
+    controladora_img.stop();
     Serial.println("Disconnected, broadcasting to network...");
 }
 
@@ -102,6 +106,7 @@ void handle_heartbeat() {
         // end connection if there was not a heartbeat in the last 5s
         if (millis() - last_recieved_heartbeat >= 5000) {
             Serial.println("Didn't recieve any heartbeat in the last  5s, disconnecting...");
+            controladora.write(HEADER_PACKER_FORCE_CONNECTION_END);
             disconnect();
         }
     }
@@ -118,9 +123,9 @@ void take_and_send_image() {
     Serial.print("x");
     Serial.println(camera_image->height);
 
-    sprintf(tcp_out_buffer, "DTDC%6d", camera_image->len);
-    controladora.write(tcp_out_buffer);
-    controladora.write(camera_image->buf, camera_image->len);
+    sprintf(tcp_out_buffer, "%s%6d", HEADER_PACKET_CAMERA_DATA, camera_image->len);
+    controladora_img.write(tcp_out_buffer);
+    controladora_img.write(camera_image->buf, camera_image->len);
 
     esp_camera_fb_return(camera_image);
 }
@@ -133,11 +138,12 @@ void loop() {
             if (millis() - last_sent_broadcast >= 3000) {
                 last_sent_broadcast = millis();
                 Udp.beginPacket(broadcastIP, communication_udp_port);
-                Udp.print("CFBC");
+                Udp.print(HEADER_PACKET_BROADCAST);
                 Udp.endPacket();
             }
 
             controladora = server.available();
+            controladora_img = img_server.available();
 
             if (controladora) {
                 if (controladora.connected()) {
@@ -147,9 +153,15 @@ void loop() {
                     Packet p = parse_packet(tcp_in_buffer, s);
                     
                     if (p.packet_type == PACKET_REQUESTING_CONNECTION) {
-                        Serial.println("Recieved TCP request, switching to slave mode");
+                        controllerIP = controladora.remoteIP();
+                        Serial.print("Recieved TCP request from ");
+                        Serial.print(controllerIP);
+                        Serial.println(", switching to slave mode");
                         current_status = STATUS_CONNECTED_TO_CONTROLLER;
-                        controladora.write("CFCK");
+                        controladora.write(HEADER_PACKET_CONNECTION_ACCEPTED);
+                    } else {
+                        Serial.print("unrecognized packet: ");
+                        Serial.println(s);
                     }
                 }
             }
@@ -161,7 +173,12 @@ void loop() {
                 
                 uint8_t s = 0;
                 while (controladora.available()) tcp_in_buffer[s++] = controladora.read();
+
+                if (s == 0) return;
+                
                 Packet p = parse_packet(tcp_in_buffer, s);
+                Serial.print("Received packet ");
+                Serial.println(p.packet_type);
 
                 switch (p.packet_type) {
                     case PACKET_HEARTBEAT:
@@ -169,6 +186,11 @@ void loop() {
                         break;
                     case PACKET_REQUEST_CAMERA_IMAGE:
                         take_and_send_image();
+                        break;
+                    case PACKET_REQUEST_CONNECTION_END:
+                        Serial.println("connection end requested by remote host, terminating...");
+                        controladora.write(HEADER_PACKET_CONNECTION_ENDED);
+                        disconnect();
                         break;
                     default:
                         break;
