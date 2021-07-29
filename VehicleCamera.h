@@ -1,4 +1,6 @@
-#pragma once
+#ifndef i_VehicleCamera
+#define i_VehicleCamera
+
 #include "esp_camera.h"
 #include <Arduino.h>
 
@@ -54,3 +56,5 @@ class VehicleCamera {
 
         void change_camera_resolution(uint8_t new_resolution);
 };
+
+#endif
