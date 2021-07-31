@@ -1,15 +1,26 @@
+#define V_DO_LOG
+#define V_LOG_LVL 0
+
 #include "wifilogin.h"
 #include "RemoteVehicle.h"
 
-RemoteVehicle vehicle(WIFI_LOGIN_SSID, WIFI_LOGIN_PASS);
+vehicleinfo_t cinfo; 
+RemoteVehicle *vehicle;
 
 void setup() {
     Serial.begin(115200);
     Serial.println();
 
-    vehicle.initial_setup();
+    cinfo.wssid = WIFI_LOGIN_SSID;
+    cinfo.wpass = WIFI_LOGIN_PASS;
+    cinfo.should_log = 1;
+    cinfo.log_severity = LOG_LVL_INFO;
+
+    vehicle = new RemoteVehicle(cinfo);
+    
+    vehicle->initial_setup();
 }
 
 void loop() {
-    vehicle.main_loop();
+    vehicle->main_loop();
 }

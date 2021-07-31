@@ -44,8 +44,8 @@ void VehicleCamera::setup_camera() {
     // Init Camera
     esp_err_t err = esp_camera_init(&config);
     if (err != ESP_OK) {
-        Serial.printf("Camera init failed with error 0x%x", err);
-        while(1);
+        logger.severe("Camera setup failed, restarting...");
+        ESP.restart();
     }
 
     _camera_sensor = esp_camera_sensor_get();

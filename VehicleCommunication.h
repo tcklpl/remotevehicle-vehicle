@@ -5,6 +5,7 @@ class VehicleCommunication;
 
 #include <WiFi.h>
 #include <WiFiUdp.h>
+#include "Logger.h"
 #include "RemoteVehicle.h"
 #include "Packet.h"
 #include "PacketParser.h"
@@ -15,10 +16,6 @@ class VehicleCommunication;
 #define STATUS_AWAITING_TCP_CONNECTION_REQUEST  1
 #define STATUS_CONNECTING_TO_IMG                2
 #define STATUS_CONNECTED                        3
-
-#define TCP_PORT 6887
-#define UDP_PORT 6888
-#define IMG_PORT 6889
 
 class VehicleCommunication : public Listener {
     private:
@@ -45,7 +42,7 @@ class VehicleCommunication : public Listener {
         void disconnect();
 
     public:
-        VehicleCommunication(RemoteVehicle *vehicle, char *wifi_ssid, char *wifi_pass);
+        VehicleCommunication(RemoteVehicle *vehicle, vehicleinfo_t cinfo);
         
         void loop();
         void send_cmd(char *bytes);

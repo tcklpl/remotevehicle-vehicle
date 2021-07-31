@@ -3,6 +3,7 @@
 
 #include "esp_camera.h"
 #include <Arduino.h>
+#include "Logger.h"
 
 // Pin definition for CAMERA_MODEL_AI_THINKER
 #define PWDN_GPIO_NUM     32

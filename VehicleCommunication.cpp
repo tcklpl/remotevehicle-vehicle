@@ -1,28 +1,36 @@
 #include "VehicleCommunication.h"
 
-VehicleCommunication::VehicleCommunication(RemoteVehicle *vehicle, char *wifi_ssid, char *wifi_pass) {
+VehicleCommunication::VehicleCommunication(RemoteVehicle *vehicle, vehicleinfo_t cinfo) {
     current_status = STATUS_BOOTING_UP;
     remote_vehicle = vehicle;
 
     // setup wifi
-    WiFi.begin(wifi_ssid, wifi_pass);
+    logger.info("Connecting to WiFi");
+    WiFi.begin(cinfo.wssid, cinfo.wpass);
+    // using this variable because it will have no use until later
+    last_sent_broadcast = millis();
     while (WiFi.status() != WL_CONNECTED) {
         delay(500);
-        Serial.print(".");
+        // restart if the wifi didn't connect within 10s
+        if (millis() - last_sent_broadcast >= cinfo.wtimeout) {
+            logger.severe("Didn't connect to the WiFi within the specified time, restarting...");
+            ESP.restart();   
+        }
     }
     setup_broadcast_ip(WiFi.localIP(), WiFi.subnetMask());
+    logger.info("WiFi Connected!");
 
     // initialize udp
-    Serial.println("initializing udp server...");
-    if (!udp_server.begin(UDP_PORT)) {
-        Serial.println("failed to initialize udp.");
-        while (1);
+    logger.info("Starting UDP server");
+    if (!udp_server.begin(cinfo.udp_port)) {
+        logger.severe("Failed to initialize UDP, restarting...");
+        ESP.restart();
     }
 
     // initialize tcp
-    Serial.println("initializing tcp servers...");
-    cmd_server = WiFiServer(TCP_PORT);
-    img_server = WiFiServer(IMG_PORT);
+    logger.info("Starting TCP servers");
+    cmd_server = WiFiServer(cinfo.cmd_port);
+    img_server = WiFiServer(cinfo.img_port);
     cmd_server.begin();
     img_server.begin();
 
@@ -43,7 +51,7 @@ void VehicleCommunication::disconnect() {
     last_recieved_heartbeat = 0;
     cmd_client.stop();
     img_client.stop();
-    Serial.println("Disconnected, broadcasting to network...");
+    logger.info("Disconnected, returning to network broadcast");
 }
 
 uint8_t VehicleCommunication::is_connected() {
@@ -74,6 +82,7 @@ void VehicleCommunication::send_img(char *header, uint8_t *bytes, int len) {
     sprintf(tcp_out_buffer, "%s%6d", header, len);
     img_client.write(tcp_out_buffer);
     img_client.write(bytes, len);
+    logger.info("Image sent");
 }
 
 void VehicleCommunication::handle_heartbeat() {
@@ -86,7 +95,7 @@ void VehicleCommunication::handle_heartbeat() {
         cmd_client.write(PKT_CF_ANY_HEARTBEAT);
     }
     if (millis() - last_recieved_heartbeat >= 5000) {
-        Serial.println("Heart failed");
+        logger.warn("Heart failed");
         disconnect();
     }
 }
@@ -98,7 +107,7 @@ void VehicleCommunication::loop() {
             // send broadcast every 3s
             if (millis() - last_sent_broadcast >= 3000) {
                 last_sent_broadcast = millis();
-                udp_server.beginPacket(broadcast_ip, UDP_PORT);
+                udp_server.beginPacket(broadcast_ip, remote_vehicle->get_cinfo().udp_port);
                 udp_server.print(PKT_CF_SRV_BROADCAST);
                 udp_server.endPacket();
             }
@@ -134,16 +143,16 @@ void VehicleCommunication::loop() {
 
 void VehicleCommunication::cb_cmd_connect(Packet p) {
     client_ip = cmd_client.remoteIP();
-    Serial.print("Recieved TCP request from ");
-    Serial.println(client_ip);
+    logger.info("Recieved TCP request");
     cmd_client.write(PKT_CF_SRV_CON_OK);
     current_status = STATUS_CONNECTING_TO_IMG;
 }
 
 void VehicleCommunication::cb_cam_connect(Packet p) {
-    Serial.println("Recieved TCP IMG request");
+    logger.info("Recieved TCP IMG request");
     img_client.write(PKT_CF_SRV_CAM_CON_OK);
     current_status = STATUS_CONNECTED;
+    logger.info("Connected to remote controller!");
 }
 
 void VehicleCommunication::cb_heartbeat(Packet p) {
@@ -155,11 +164,11 @@ void VehicleCommunication::cb_req_cam_img(Packet p) {
 }
 
 void VehicleCommunication::cb_req_con_end(Packet p) {
-    Serial.println("connection end requested by remote host, terminating...");
+    logger.info("Connection end requested by remote host, terminating");
     cmd_client.write(PKT_CF_SRV_CON_END);
     disconnect();    
 }
 
 void VehicleCommunication::cb_req_cam_res(Packet p) {
-    Serial.println("controller request camera image resolution change.");
+    logger.info("Controller request camera image resolution change");
 }
