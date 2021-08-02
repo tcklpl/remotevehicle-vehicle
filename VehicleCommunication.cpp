@@ -131,9 +131,13 @@ void VehicleCommunication::loop() {
             while (cmd_client.available()) tcp_in_buffer[s++] = cmd_client.read();
         }
     }
+    
     // parse any recieved packet
-    if (s > 0)
+    if (s > 0) {
         parser.handle_packet(tcp_in_buffer, s);
+    }
+        
+        
     clear_buffers();
 }
 
@@ -171,4 +175,11 @@ void VehicleCommunication::cb_req_con_end(Packet p) {
 
 void VehicleCommunication::cb_req_cam_res(Packet p) {
     logger.info("Controller request camera image resolution change");
+    if (remote_vehicle->change_canera_resolution(p.get_info_as_uint8())) {
+        cmd_client.write(PKT_CF_SRV_CAM_RES_OK);
+        logger.info("Camera resolution changed!");
+    } else {
+        cmd_client.write(PKT_ERR_CAM_RES);
+        logger.error("Could not change camera resolution");
+    }
 }

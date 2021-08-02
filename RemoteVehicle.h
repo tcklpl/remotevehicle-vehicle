@@ -55,6 +55,7 @@ class RemoteVehicle {
 
         void initial_setup();
         void take_and_send_image();
+        int change_canera_resolution(uint8_t new_resolution);
         void main_loop();
 
         vehicleinfo_t get_cinfo();

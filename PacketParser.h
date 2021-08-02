@@ -4,6 +4,7 @@
 #include "Packet.h"
 #include "Listener.h"
 #include "Callback.h"
+#include <Arduino.h>
 
 class PacketParser {
     private:

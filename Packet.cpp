@@ -21,9 +21,16 @@ Packet::Packet(char *packet, uint8_t packet_size) {
             _packet_type = i;
     }
     if (packet_size > 4) {
+        _packet_info = new char[packet_size - 4];
         // copy everything 4-bytes-in on packet to _packet_info
         strncpy(_packet_info, packet + 4, packet_size - 4);
     }
+}
+
+void Packet::free_info() {
+    if (_packet_info) {
+        delete _packet_info;
+    }   
 }
 
 int Packet::has_info() {
@@ -31,10 +38,10 @@ int Packet::has_info() {
 }
 
 uint8_t Packet::parse_uint8(char *input, uint8_t input_size) {
-    uint8_t total, subtotal;
+    uint8_t total = 0, subtotal;
     uint8_t current_power_of_10 = 0;
     
-    for (uint8_t i = input_size - 1; i >= 0; i--) {
+    for (int i = input_size - 1; i >= 0; i--) {
         subtotal = input[i] - '0';
         for (uint8_t mul = 0; mul < current_power_of_10; mul++)
             subtotal *= 10;

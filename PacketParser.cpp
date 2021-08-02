@@ -32,6 +32,8 @@ void PacketParser::trigger_callbacks(Packet packet) {
 Packet PacketParser::handle_packet(char *packet, uint8_t packet_size) {
     Packet p(packet, packet_size);
     trigger_callbacks(p);
+    if (p.has_info())
+        p.free_info();
 }
 
 /**
