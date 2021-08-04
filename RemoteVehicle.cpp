@@ -10,6 +10,11 @@ void RemoteVehicle::initial_setup() {
 
     logger.info("Setting up camera");
     camera.setup_camera();
+
+    if (cinfo.ir_enable) {
+        logger.info("Setting up IR Sensor");
+        ir = new VehicleIR(cinfo.ir_analog, cinfo.ir_digital);
+    }
     
     com = new VehicleCommunication(this, cinfo);
 
@@ -32,6 +37,11 @@ int RemoteVehicle::change_canera_resolution(uint8_t new_resolution) {
     return camera.change_camera_resolution(new_resolution);
 }
 
+uint8_t RemoteVehicle::get_camera_resolution() {
+    return camera.get_camera_resolution();
+}
+
 void RemoteVehicle::main_loop() {
     com->loop();
+    Serial.println(ir->analog());
 }

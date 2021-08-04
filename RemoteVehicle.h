@@ -25,6 +25,13 @@ class RemoteVehicle;
  * cmd_port                 TCP Port for sending and recieving commands.
  * udp_port                 UDP Port for bradcasting.
  * img_port                 TCP Port for sending images to the controller.
+ * 
+ * ir_enable                To enable the use of an infrared sensor. You can
+ *                          enable this and specify just the analog or the digital
+ *                          pins, there's no need to specify both (unless of course
+ *                          you're gonna use both).
+ * ir_analog                The pin that connects to the IR analog output.
+ * ir_digital               The pin that connects to the IR digital output.
  */
 struct vehicleinfo_t {
     // WiFi related configurations
@@ -34,6 +41,8 @@ struct vehicleinfo_t {
     uint8_t should_log = 0, log_severity = 3;
     // TCP/UDP related configurations
     uint16_t cmd_port = 6887, udp_port = 6888, img_port = 6889;
+    // IR Sensor ports
+    uint8_t ir_enable = 0, ir_analog = -1, ir_digital = -1;
 };
 
 
@@ -41,6 +50,7 @@ struct vehicleinfo_t {
 #include "VehicleCommunication.h"
 #include "PacketParser.h"
 #include "Logger.h"
+#include "VehicleIR.h"
 
 class RemoteVehicle {
     private:
@@ -50,12 +60,15 @@ class RemoteVehicle {
         PacketParser parser;
         VehicleCommunication *com;
 
+        VehicleIR *ir;
+
     public:
         RemoteVehicle(vehicleinfo_t c_info);
 
         void initial_setup();
         void take_and_send_image();
         int change_canera_resolution(uint8_t new_resolution);
+        uint8_t get_camera_resolution();
         void main_loop();
 
         vehicleinfo_t get_cinfo();

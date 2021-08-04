@@ -1,4 +1,5 @@
 #include "VehicleCommunication.h"
+#include "Esp.h"
 
 VehicleCommunication::VehicleCommunication(RemoteVehicle *vehicle, vehicleinfo_t cinfo) {
     current_status = STATUS_BOOTING_UP;
@@ -14,7 +15,7 @@ VehicleCommunication::VehicleCommunication(RemoteVehicle *vehicle, vehicleinfo_t
         // restart if the wifi didn't connect within 10s
         if (millis() - last_sent_broadcast >= cinfo.wtimeout) {
             logger.severe("Didn't connect to the WiFi within the specified time, restarting...");
-            ESP.restart();   
+            ESP.restart();
         }
     }
     setup_broadcast_ip(WiFi.localIP(), WiFi.subnetMask());
@@ -41,6 +42,7 @@ VehicleCommunication::VehicleCommunication(RemoteVehicle *vehicle, vehicleinfo_t
     parser.register_callback(new Callback<Listener>((Listener*) this, (void (Listener::*)(Packet)) &VehicleCommunication::cb_req_cam_img), PKT_REQ_CAMERA_IMAGE, 1);
     parser.register_callback(new Callback<Listener>((Listener*) this, (void (Listener::*)(Packet)) &VehicleCommunication::cb_req_con_end), PKT_REQ_CONNECTION_END, 1);
     parser.register_callback(new Callback<Listener>((Listener*) this, (void (Listener::*)(Packet)) &VehicleCommunication::cb_req_cam_res), PKT_REQ_CAMERA_RES_CHANGE, 1);
+    parser.register_callback(new Callback<Listener>((Listener*) this, (void (Listener::*)(Packet)) &VehicleCommunication::cb_req_info_cam_res), PKT_REQ_CAMERA_RES, 1);
     
     current_status = STATUS_AWAITING_TCP_CONNECTION_REQUEST;
 }
@@ -182,4 +184,10 @@ void VehicleCommunication::cb_req_cam_res(Packet p) {
         cmd_client.write(PKT_ERR_CAM_RES);
         logger.error("Could not change camera resolution");
     }
+}
+
+void VehicleCommunication::cb_req_info_cam_res(Packet p) {
+    logger.info("Controller request camera resolution");
+    sprintf(tcp_out_buffer, "%s%2d", PKT_DT_SRV_CAM_RES, remote_vehicle->get_camera_resolution());
+    img_client.write(tcp_out_buffer);
 }

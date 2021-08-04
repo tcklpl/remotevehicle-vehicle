@@ -10,7 +10,8 @@ char *client_packet_headers[] = {
     PKT_CF_CLI_REQ_CON_END, // request connection end
     PKT_DT_CLI_REQ_CAM_IMG, // request camera image
     PKT_CF_CLI_REQ_CAM_RES_CHANGE, // requesting camera resolution change
-    PKT_CF_CLI_CAM_CON_ATTEMPT
+    PKT_CF_CLI_CAM_CON_ATTEMPT,
+    PKT_DT_CLI_REQ_CAM_RES
 };
 
 Packet::Packet(char *packet, uint8_t packet_size) {

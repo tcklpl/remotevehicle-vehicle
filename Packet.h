@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <Arduino.h>
-#define NUMBER_OF_CLIENT_PACKETS     6
+#define NUMBER_OF_CLIENT_PACKETS     7
 
 // packets that can be sent
 #define PKT_CF_SRV_BROADCAST                "CFBC"
@@ -25,6 +25,8 @@
 #define PKT_DT_SRV_CAMERA_DATA              "DTDC"
 #define PKT_CF_CLI_REQ_CAM_RES_CHANGE       "CFCS"
 #define PKT_CF_SRV_CAM_RES_OK               "CFCO"
+#define PKT_DT_CLI_REQ_CAM_RES              "DTRR"
+#define PKT_DT_SRV_CAM_RES                  "DTCR"
 
 #define PKT_ERR_CAM_RES                     "ER02"
 
@@ -36,6 +38,7 @@
 #define PKT_REQ_CAMERA_IMAGE         3
 #define PKT_REQ_CAMERA_RES_CHANGE    4
 #define PKT_REQ_CAMERA_CON           5
+#define PKT_REQ_CAMERA_RES           6
 
 extern char *client_packet_headers[];
 

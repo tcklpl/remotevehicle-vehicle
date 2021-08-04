@@ -56,6 +56,7 @@ class VehicleCamera {
         void return_camera_fb();
 
         int change_camera_resolution(uint8_t new_resolution);
+        uint8_t get_camera_resolution();
 };
 
 #endif

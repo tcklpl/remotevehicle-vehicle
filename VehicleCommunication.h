@@ -11,6 +11,7 @@ class VehicleCommunication;
 #include "PacketParser.h"
 #include "Listener.h"
 #include "Callback.h"
+#include "esp_camera.h"
 
 #define STATUS_BOOTING_UP                       0
 #define STATUS_AWAITING_TCP_CONNECTION_REQUEST  1
@@ -56,6 +57,7 @@ class VehicleCommunication : public Listener {
         void cb_req_cam_img(Packet p);
         void cb_req_con_end(Packet p);
         void cb_req_cam_res(Packet p);
+        void cb_req_info_cam_res(Packet p);
 };
 
 #endif
