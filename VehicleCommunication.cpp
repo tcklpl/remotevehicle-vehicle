@@ -43,10 +43,18 @@ VehicleCommunication::VehicleCommunication(RemoteVehicle *vehicle, vehicleinfo_t
     parser.register_callback(new Callback<Listener>((Listener*) this, (void (Listener::*)(Packet)) &VehicleCommunication::cb_req_con_end), PKT_REQ_CONNECTION_END, 1);
     parser.register_callback(new Callback<Listener>((Listener*) this, (void (Listener::*)(Packet)) &VehicleCommunication::cb_req_cam_res), PKT_REQ_CAMERA_RES_CHANGE, 1);
     parser.register_callback(new Callback<Listener>((Listener*) this, (void (Listener::*)(Packet)) &VehicleCommunication::cb_req_info_cam_res), PKT_REQ_CAMERA_RES, 1);
+
+    parser.register_callback(new Callback<Listener>((Listener*) this, (void (Listener::*)(Packet)) &VehicleCommunication::cb_mov), PKT_STOP, 1);
+    parser.register_callback(new Callback<Listener>((Listener*) this, (void (Listener::*)(Packet)) &VehicleCommunication::cb_mov), PKT_FORWARD, 1);
+    parser.register_callback(new Callback<Listener>((Listener*) this, (void (Listener::*)(Packet)) &VehicleCommunication::cb_mov), PKT_LEFT, 1);
+    parser.register_callback(new Callback<Listener>((Listener*) this, (void (Listener::*)(Packet)) &VehicleCommunication::cb_mov), PKT_RIGHT, 1);
+    parser.register_callback(new Callback<Listener>((Listener*) this, (void (Listener::*)(Packet)) &VehicleCommunication::cb_mov), PKT_BACKWARD, 1);
+    parser.register_callback(new Callback<Listener>((Listener*) this, (void (Listener::*)(Packet)) &VehicleCommunication::cb_mov), PKT_NEUTRAL, 1);
     
     current_status = STATUS_AWAITING_TCP_CONNECTION_REQUEST;
 }
 
+#pragma region internal
 void VehicleCommunication::disconnect() {
     current_status = STATUS_AWAITING_TCP_CONNECTION_REQUEST;
     last_sent_heartbeat = 0;
@@ -142,11 +150,12 @@ void VehicleCommunication::loop() {
         
     clear_buffers();
 }
+#pragma endregion
 
 /**
  *  CALLBACK FUNCTIONS
  */
-
+#pragma region callbacks
 void VehicleCommunication::cb_cmd_connect(Packet p) {
     client_ip = cmd_client.remoteIP();
     logger.info("Recieved TCP request");
@@ -191,3 +200,31 @@ void VehicleCommunication::cb_req_info_cam_res(Packet p) {
     sprintf(tcp_out_buffer, "%s%2d", PKT_DT_SRV_CAM_RES, remote_vehicle->get_camera_resolution());
     img_client.write(tcp_out_buffer);
 }
+
+void VehicleCommunication::cb_mov(Packet p) {
+    logger.info("Controller requested movimentation");
+    MovimentationStatus mstatus = MovimentationStatus::NEUTRAL;
+    switch (p.get_packet_type())
+    {
+        case PKT_STOP:
+            mstatus = MovimentationStatus::BRAKE;
+            break;
+        case PKT_FORWARD:
+            mstatus = MovimentationStatus::FORWARD;
+            break;
+        case PKT_LEFT:
+            mstatus = MovimentationStatus::TURN_L;
+            break;
+        case PKT_RIGHT:
+            mstatus = MovimentationStatus::TURN_R;
+            break;
+        case PKT_BACKWARD:
+            mstatus = MovimentationStatus::BACKWARD;
+            break;
+        default:
+            break;
+    }
+    remote_vehicle->move(mstatus);
+
+}
+#pragma endregion

@@ -11,6 +11,10 @@ void setup() {
     cinfo.wpass = WIFI_LOGIN_PASS;
     cinfo.should_log = 1;
     cinfo.log_severity = LOG_LVL_INFO;
+    cinfo.motor_la = 12;
+    cinfo.motor_lb = 13;
+    cinfo.motor_ra = 15;
+    cinfo.motor_rb = 14;
 
     vehicle = new RemoteVehicle(cinfo);
     

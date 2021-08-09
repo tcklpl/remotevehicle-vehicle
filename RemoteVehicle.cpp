@@ -11,6 +11,15 @@ void RemoteVehicle::initial_setup() {
     logger.info("Setting up camera");
     camera.setup_camera();
 
+    logger.info("Setting up motors");
+    vehiclemovinfo_t movinfo;
+    movinfo.left_a = cinfo.motor_la;
+    movinfo.left_b = cinfo.motor_lb;
+    movinfo.right_a = cinfo.motor_ra;
+    movinfo.right_b = cinfo.motor_rb;
+    movinfo.default_state = cinfo.motor_default;
+    mov = new VehicleMovimentation(movinfo);
+
     if (cinfo.ir_enable) {
         logger.info("Setting up IR Sensor");
         ir = new VehicleIR(cinfo.ir_analog, cinfo.ir_digital);
@@ -32,8 +41,7 @@ void RemoteVehicle::take_and_send_image() {
     camera.return_camera_fb();
 }
 
-int RemoteVehicle::change_canera_resolution(uint8_t new_resolution) {
-    if (!com->is_connected()) return 0;
+bool RemoteVehicle::change_canera_resolution(uint8_t new_resolution) {
     return camera.change_camera_resolution(new_resolution);
 }
 
@@ -41,7 +49,10 @@ uint8_t RemoteVehicle::get_camera_resolution() {
     return camera.get_camera_resolution();
 }
 
+void RemoteVehicle::move(MovimentationStatus status) {
+    mov->setMove(status);
+}
+
 void RemoteVehicle::main_loop() {
     com->loop();
-    Serial.println(ir->analog());
 }

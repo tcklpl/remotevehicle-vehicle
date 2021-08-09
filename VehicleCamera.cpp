@@ -60,11 +60,11 @@ void VehicleCamera::return_camera_fb() {
     esp_camera_fb_return(_camera_framebuffer);
 }
 
-int VehicleCamera::change_camera_resolution(uint8_t new_resolution) {
-    if (new_resolution < 1 || new_resolution > 14) return 0;
+bool VehicleCamera::change_camera_resolution(uint8_t new_resolution) {
+    if (new_resolution < 1 || new_resolution > 14) return false;
     _current_image_size_code = new_resolution;
     _camera_sensor->set_framesize(_camera_sensor, camera_frame_sizes[new_resolution - 1]);
-    return 1;
+    return true;
 }
 
 uint8_t VehicleCamera::get_camera_resolution() {

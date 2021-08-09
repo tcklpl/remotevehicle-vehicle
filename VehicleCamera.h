@@ -24,6 +24,7 @@
 #define HREF_GPIO_NUM     23
 #define PCLK_GPIO_NUM     22
 
+// Possible camera resolutions
 #define CAMERA_RESOLUTION_96_96 1
 #define CAMERA_RESOLUTION_160_120 2
 #define CAMERA_RESOLUTION_176_144 3
@@ -55,7 +56,7 @@ class VehicleCamera {
         camera_fb_t* get_gamera_fb();
         void return_camera_fb();
 
-        int change_camera_resolution(uint8_t new_resolution);
+        bool change_camera_resolution(uint8_t new_resolution);
         uint8_t get_camera_resolution();
 };
 
