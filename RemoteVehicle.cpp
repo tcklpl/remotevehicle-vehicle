@@ -4,7 +4,7 @@ RemoteVehicle::RemoteVehicle(vehicleinfo_t c_info) {
     cinfo = c_info;
 }
 
-void RemoteVehicle::initial_setup() {
+void RemoteVehicle::initialSetup() {
 
     logger = Logger(cinfo.should_log, cinfo.log_severity);
 
@@ -30,22 +30,22 @@ void RemoteVehicle::initial_setup() {
     logger.info("Initialization done!, broadcasting to network");
 }
 
-vehicleinfo_t RemoteVehicle::get_cinfo() {
+vehicleinfo_t RemoteVehicle::getCInfo() {
     return cinfo;
 }
 
-void RemoteVehicle::take_and_send_image() {
+void RemoteVehicle::takeAndSendImage() {
     if (!com->is_connected()) return;
     camera_fb_t *camera_image = camera.get_gamera_fb();
-    com->send_img(PKT_DT_SRV_CAMERA_DATA, camera_image->buf, camera_image->len);
+    com->sendImg(PKT_DT_SRV_CAMERA_DATA, camera_image->buf, camera_image->len);
     camera.return_camera_fb();
 }
 
-bool RemoteVehicle::change_canera_resolution(uint8_t new_resolution) {
+bool RemoteVehicle::changeCameraResolution(uint8_t new_resolution) {
     return camera.change_camera_resolution(new_resolution);
 }
 
-uint8_t RemoteVehicle::get_camera_resolution() {
+uint8_t RemoteVehicle::getCameraResolution() {
     return camera.get_camera_resolution();
 }
 
@@ -53,6 +53,39 @@ void RemoteVehicle::move(MovimentationStatus status) {
     mov->setMove(status);
 }
 
-void RemoteVehicle::main_loop() {
+void RemoteVehicle::mainLoop() {
     com->loop();
+    if (isBroadcastingVideo) {
+        if (com->is_connected()) {
+            if (millis() - lastBroadcastedFrameTime >= frameTime) {
+                camera_fb_t *camera_image = camera.get_gamera_fb();
+                com->sendImg(PKT_DT_VIDEO_STREAM, camera_image->buf, camera_image->len);
+                camera.return_camera_fb();
+            }
+        }
+    }
+}
+
+VehicleIR* RemoteVehicle::getIR() {
+    return ir;
+}
+
+VehicleCamera* RemoteVehicle::getCamera() {
+    return &camera;
+}
+
+void RemoteVehicle::setVideoBroadcast(bool status, uint8_t fps) {
+    if (cinfo.blockVideoStream) return;
+    if (cinfo.videoStreamMaxFPS < fps) return;
+    if (cinfo.videoStreamMaxResolution < camera.get_camera_resolution()) return;
+
+    isBroadcastingVideo = status;
+    if (status) {
+        frameTime = 1000 / fps;
+        lastBroadcastedFrameTime = millis() - frameTime;
+    }
+}
+
+bool RemoteVehicle::isCurrentlyBroadcastingVideo() {
+    return isBroadcastingVideo;
 }

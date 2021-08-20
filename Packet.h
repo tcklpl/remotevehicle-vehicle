@@ -22,6 +22,11 @@
 #define PKT_CF_SRV_CON_END                  "CFCE"
 #define PKT_CF_SRV_FORCE_CON_END            "DTXC"
 
+// LED flash packets
+#define PKT_CF_CHG_FLASH                    "CFFL"
+#define PKT_DT_REQ_FLASH                    "DTRF"
+#define PKT_DT_RES_FLASH                    "DTDF"
+
 // data packets - camera
 #define PKT_DT_CLI_REQ_CAM_IMG              "DTRC"
 #define PKT_DT_SRV_CAMERA_DATA              "DTDC"
@@ -29,6 +34,17 @@
 #define PKT_CF_SRV_CAM_RES_OK               "CFCO"
 #define PKT_DT_CLI_REQ_CAM_RES              "DTRR"
 #define PKT_DT_SRV_CAM_RES                  "DTCR"
+#define PKT_DT_REQ_VIDEO_STREAM             "DTRV"
+#define PKT_DT_VIDEO_OK                     "DTVO"
+#define PKT_DT_VIDEO_STREAM                 "DTVD"
+#define PKT_DT_END_VIDEO_STREAM             "DTSV"
+#define PKT_DT_VIDEO_STREAM_ENDED           "DTVS"
+
+// data packets - IR
+#define PKT_DT_IR_REQ_DIGITAL               "DTID"
+#define PKT_DT_IR_RES_DIGITAL               "DTDI"
+#define PKT_DT_IR_REQ_ANALOG                "DTIA"
+#define PKT_DT_IR_RES_ANALOG                "DTDA"
 
 // movement packets
 #define PKT_MV_STOP                         "MVST"
@@ -41,6 +57,11 @@
 // error packets
 #define PKT_ERR_CAM_RES                     "ER02"
 #define PKT_ERR_NO_IR                       "ER03"
+#define PKT_ERR_VD_RES_TOO_BIG              "ER04"
+#define PKT_ERR_VD_FPS_TOO_GREAT            "ER05"
+#define PKT_ERR_VIDEO_STREAM_BLOCKED        "ER06"
+#define PKT_ERR_NO_VIDEO_STREAM             "ER07"
+#define PKT_ERR_CHG_RES_WHILE_STREAMING     "ER08"
 
 // packets that can be received
 #define PKT_UNKNOWN                 -1
@@ -57,8 +78,14 @@
 #define PKT_RIGHT                   10
 #define PKT_BACKWARD                11
 #define PKT_NEUTRAL                 12
+#define PKT_READ_IR_DIGITAL         13
+#define PKT_READ_IR_ANALOG          14
+#define PKT_CHANGE_FLASH            15
+#define PKT_REQ_FLASH_STATUS        16
+#define PKT_REQ_VIDEO_STREAM        17
+#define PKT_END_VIDEO_STREAM        18
 
-#define NUMBER_OF_CLIENT_PACKETS    13
+#define NUMBER_OF_CLIENT_PACKETS    19
 
 extern char *client_packet_headers[];
 

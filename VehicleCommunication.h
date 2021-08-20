@@ -39,17 +39,17 @@ class VehicleCommunication : public Listener {
 
         PacketParser parser;
 
-        void setup_broadcast_ip(IPAddress ip, IPAddress mask);
-        void clear_buffers();
-        void handle_heartbeat();
+        void setupBroadcastIP(IPAddress ip, IPAddress mask);
+        void clearBuffers();
+        void handleHeartbeat();
         void disconnect();
 
     public:
         VehicleCommunication(RemoteVehicle *vehicle, vehicleinfo_t cinfo);
         
         void loop();
-        void send_cmd(char *bytes);
-        void send_img(char *header, uint8_t *bytes, int len);
+        void sendCmd(char *bytes);
+        void sendImg(char *header, uint8_t *bytes, int len);
         uint8_t is_connected();
         
         // callbacks
@@ -64,6 +64,15 @@ class VehicleCommunication : public Listener {
         void cb_req_info_cam_res(Packet p);
 
         void cb_mov(Packet p);
+
+        void cb_ir_digital(Packet p);
+        void cb_ir_analog(Packet p);
+
+        void cb_change_flash(Packet p);
+        void cb_request_flash(Packet p);
+
+        void cb_commence_video_stream(Packet p);
+        void cb_end_video_stream(Packet p);
 
 };
 

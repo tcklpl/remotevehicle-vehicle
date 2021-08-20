@@ -6,11 +6,10 @@ RemoteVehicle *vehicle;
 
 void setup() {
     Serial.begin(115200);
-    Serial.println();
     cinfo.wssid = WIFI_LOGIN_SSID;
     cinfo.wpass = WIFI_LOGIN_PASS;
-    cinfo.should_log = 1;
-    cinfo.log_severity = LOG_LVL_INFO;
+    cinfo.should_log = true;
+    cinfo.log_severity = 0;
     cinfo.motor_la = 12;
     cinfo.motor_lb = 13;
     cinfo.motor_ra = 15;
@@ -18,9 +17,9 @@ void setup() {
 
     vehicle = new RemoteVehicle(cinfo);
     
-    vehicle->initial_setup();
+    vehicle->initialSetup();
 }
 
 void loop() {
-    vehicle->main_loop();
+    vehicle->mainLoop();
 }

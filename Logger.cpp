@@ -2,7 +2,7 @@
 
 Logger logger = Logger(0, LOG_LVL_SEVERE);
 
-Logger::Logger(uint8_t do_log, uint8_t severity) {
+Logger::Logger(bool do_log, uint8_t severity) {
     should_log = do_log;
     log_severity = severity;
 }
@@ -12,24 +12,28 @@ void Logger::lprint(char *message, uint8_t line_break) {
 }
 
 void Logger::info(char *message) {
+    if (!should_log) return;
     if (log_severity > LOG_LVL_INFO) return;
     lprint("[  INFO  ] ", 0);
     lprint(message, 1);
 }
 
 void Logger::warn(char *message) {
+    if (!should_log) return;
     if (log_severity > LOG_LVL_WARNING) return;
     lprint("[  WARN  ] ", 0);
     lprint(message, 1);
 }
 
 void Logger::error(char *message) {
+    if (!should_log) return;
     if (log_severity > LOG_LVL_ERROR) return;
     lprint("[  ERROR ] ", 0);
     lprint(message, 1);
 }
 
 void Logger::severe(char *message) {
+    if (!should_log) return;
     lprint("[ SEVERE ] ", 0);
     lprint(message, 1);
 }

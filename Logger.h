@@ -15,10 +15,11 @@ extern Logger logger;
 
 class Logger {
     private:
-        uint8_t should_log, log_severity;
+        bool should_log;
+        uint8_t log_severity;
         void lprint(char *message, uint8_t line_break);
     public:
-        Logger(uint8_t do_log, uint8_t severity);
+        Logger(bool do_log, uint8_t severity);
         void info(char *message);
         void warn(char *message);
         void error(char *message);

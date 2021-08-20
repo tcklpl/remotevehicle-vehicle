@@ -5,11 +5,11 @@
  *  PKT_XX_(CLI|ANY)_X+
  */
 char *client_packet_headers[] = {
-    PKT_CF_CLI_REQ_CON, // request connection
-    PKT_CF_ANY_HEARTBEAT, // heartbeat
-    PKT_CF_CLI_REQ_CON_END, // request connection end
-    PKT_DT_CLI_REQ_CAM_IMG, // request camera image
-    PKT_CF_CLI_REQ_CAM_RES_CHANGE, // requesting camera resolution change
+    PKT_CF_CLI_REQ_CON,
+    PKT_CF_ANY_HEARTBEAT,
+    PKT_CF_CLI_REQ_CON_END,
+    PKT_DT_CLI_REQ_CAM_IMG,
+    PKT_CF_CLI_REQ_CAM_RES_CHANGE,
     PKT_CF_CLI_CAM_CON_ATTEMPT,
     PKT_DT_CLI_REQ_CAM_RES,
     PKT_MV_STOP,
@@ -17,7 +17,13 @@ char *client_packet_headers[] = {
     PKT_MV_LEFT,
     PKT_MV_RIGHT,
     PKT_MV_BACKWARD,
-    PKT_MV_NEUTRAL
+    PKT_MV_NEUTRAL,
+    PKT_DT_IR_REQ_DIGITAL,
+    PKT_DT_IR_REQ_ANALOG,
+    PKT_CF_CHG_FLASH,
+    PKT_DT_REQ_FLASH,
+    PKT_DT_REQ_VIDEO_STREAM,
+    PKT_DT_END_VIDEO_STREAM
 };
 
 Packet::Packet(char *packet, uint8_t packet_size) {
@@ -50,6 +56,9 @@ uint8_t Packet::parse_uint8(char *input, uint8_t input_size) {
     
     for (int i = input_size - 1; i >= 0; i--) {
         subtotal = input[i] - '0';
+        // prevent other characters from being calaculated that are not between 0-9
+        // don't have to check if < 0, because uint8_t is unsigned.
+        if (subtotal > 9) subtotal = 0;
         for (uint8_t mul = 0; mul < current_power_of_10; mul++)
             subtotal *= 10;
         total += subtotal;

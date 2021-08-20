@@ -24,6 +24,9 @@
 #define HREF_GPIO_NUM     23
 #define PCLK_GPIO_NUM     22
 
+// onboard led flash
+#define FLASH_GPIO_NUM     4
+
 // Possible camera resolutions
 #define CAMERA_RESOLUTION_96_96 1
 #define CAMERA_RESOLUTION_160_120 2
@@ -47,6 +50,7 @@ class VehicleCamera {
         camera_fb_t *_camera_framebuffer;
         sensor_t    *_camera_sensor;
         uint8_t      _current_image_size_code;
+        bool         _camera_flash_status;
     public:
         VehicleCamera();
         VehicleCamera(uint8_t camera_frame_size);
@@ -58,6 +62,9 @@ class VehicleCamera {
 
         bool change_camera_resolution(uint8_t new_resolution);
         uint8_t get_camera_resolution();
+
+        void set_flash_state(uint8_t state);
+        bool is_flash_on();
 };
 
 #endif

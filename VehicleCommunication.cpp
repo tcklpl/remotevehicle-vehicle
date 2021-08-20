@@ -18,7 +18,7 @@ VehicleCommunication::VehicleCommunication(RemoteVehicle *vehicle, vehicleinfo_t
             ESP.restart();
         }
     }
-    setup_broadcast_ip(WiFi.localIP(), WiFi.subnetMask());
+    setupBroadcastIP(WiFi.localIP(), WiFi.subnetMask());
     logger.info("WiFi Connected!");
 
     // initialize udp
@@ -50,6 +50,12 @@ VehicleCommunication::VehicleCommunication(RemoteVehicle *vehicle, vehicleinfo_t
     parser.register_callback(new Callback<Listener>((Listener*) this, (void (Listener::*)(Packet)) &VehicleCommunication::cb_mov), PKT_RIGHT, 1);
     parser.register_callback(new Callback<Listener>((Listener*) this, (void (Listener::*)(Packet)) &VehicleCommunication::cb_mov), PKT_BACKWARD, 1);
     parser.register_callback(new Callback<Listener>((Listener*) this, (void (Listener::*)(Packet)) &VehicleCommunication::cb_mov), PKT_NEUTRAL, 1);
+
+    parser.register_callback(new Callback<Listener>((Listener*) this, (void (Listener::*)(Packet)) &VehicleCommunication::cb_ir_digital), PKT_READ_IR_DIGITAL, 1);
+    parser.register_callback(new Callback<Listener>((Listener*) this, (void (Listener::*)(Packet)) &VehicleCommunication::cb_ir_analog), PKT_READ_IR_ANALOG, 1);
+
+    parser.register_callback(new Callback<Listener>((Listener*) this, (void (Listener::*)(Packet)) &VehicleCommunication::cb_commence_video_stream), PKT_REQ_VIDEO_STREAM, 1);
+    parser.register_callback(new Callback<Listener>((Listener*) this, (void (Listener::*)(Packet)) &VehicleCommunication::cb_end_video_stream), PKT_END_VIDEO_STREAM, 1);
     
     current_status = STATUS_AWAITING_TCP_CONNECTION_REQUEST;
 }
@@ -68,7 +74,7 @@ uint8_t VehicleCommunication::is_connected() {
     return current_status == STATUS_CONNECTED;
 }
 
-void VehicleCommunication::setup_broadcast_ip(IPAddress ip, IPAddress mask) {
+void VehicleCommunication::setupBroadcastIP(IPAddress ip, IPAddress mask) {
     for (uint8_t i = 0; i < 4; i++) {
         if (mask[i] == 255)
             broadcast_ip[i] = ip[i];
@@ -79,23 +85,23 @@ void VehicleCommunication::setup_broadcast_ip(IPAddress ip, IPAddress mask) {
     }
 }
 
-void VehicleCommunication::clear_buffers() {
+void VehicleCommunication::clearBuffers() {
     tcp_in_buffer[0] = '\0';
     tcp_out_buffer[0] = '\0';
 }
 
-void VehicleCommunication::send_cmd(char *bytes) {
+void VehicleCommunication::sendCmd(char *bytes) {
     cmd_client.write(bytes);
 }
 
-void VehicleCommunication::send_img(char *header, uint8_t *bytes, int len) {
+void VehicleCommunication::sendImg(char *header, uint8_t *bytes, int len) {
     sprintf(tcp_out_buffer, "%s%6d", header, len);
     img_client.write(tcp_out_buffer);
     img_client.write(bytes, len);
     logger.info("Image sent");
 }
 
-void VehicleCommunication::handle_heartbeat() {
+void VehicleCommunication::handleHeartbeat() {
     if (last_recieved_heartbeat == 0 || last_sent_heartbeat == 0) {
         last_recieved_heartbeat = millis();
         last_sent_heartbeat = millis();
@@ -117,7 +123,7 @@ void VehicleCommunication::loop() {
             // send broadcast every 3s
             if (millis() - last_sent_broadcast >= 3000) {
                 last_sent_broadcast = millis();
-                udp_server.beginPacket(broadcast_ip, remote_vehicle->get_cinfo().udp_port);
+                udp_server.beginPacket(broadcast_ip, remote_vehicle->getCInfo().udp_port);
                 udp_server.print(PKT_CF_SRV_BROADCAST);
                 udp_server.endPacket();
             }
@@ -134,7 +140,7 @@ void VehicleCommunication::loop() {
                 while (img_client.available()) tcp_in_buffer[s++] = img_client.read();
             }
         case STATUS_CONNECTED:
-            handle_heartbeat();        
+            handleHeartbeat();        
     }
     if (cmd_client) {
         if (cmd_client.connected()) {
@@ -148,7 +154,7 @@ void VehicleCommunication::loop() {
     }
         
         
-    clear_buffers();
+    clearBuffers();
 }
 #pragma endregion
 
@@ -156,6 +162,8 @@ void VehicleCommunication::loop() {
  *  CALLBACK FUNCTIONS
  */
 #pragma region callbacks
+
+#pragma region connection callbacks
 void VehicleCommunication::cb_cmd_connect(Packet p) {
     client_ip = cmd_client.remoteIP();
     logger.info("Recieved TCP request");
@@ -174,19 +182,28 @@ void VehicleCommunication::cb_heartbeat(Packet p) {
     last_recieved_heartbeat = millis();
 }
 
-void VehicleCommunication::cb_req_cam_img(Packet p) {
-    remote_vehicle->take_and_send_image();
-}
-
 void VehicleCommunication::cb_req_con_end(Packet p) {
     logger.info("Connection end requested by remote host, terminating");
     cmd_client.write(PKT_CF_SRV_CON_END);
     disconnect();    
 }
 
+#pragma endregion
+
+#pragma region camera callbacks
+void VehicleCommunication::cb_req_cam_img(Packet p) {
+    remote_vehicle->takeAndSendImage();
+}
+
 void VehicleCommunication::cb_req_cam_res(Packet p) {
     logger.info("Controller request camera image resolution change");
-    if (remote_vehicle->change_canera_resolution(p.get_info_as_uint8())) {
+
+    if (remote_vehicle->isCurrentlyBroadcastingVideo()) {
+        cmd_client.write(PKT_ERR_CHG_RES_WHILE_STREAMING);
+        return;
+    }
+
+    if (remote_vehicle->changeCameraResolution(p.get_info_as_uint8())) {
         cmd_client.write(PKT_CF_SRV_CAM_RES_OK);
         logger.info("Camera resolution changed!");
     } else {
@@ -197,9 +214,10 @@ void VehicleCommunication::cb_req_cam_res(Packet p) {
 
 void VehicleCommunication::cb_req_info_cam_res(Packet p) {
     logger.info("Controller request camera resolution");
-    sprintf(tcp_out_buffer, "%s%2d", PKT_DT_SRV_CAM_RES, remote_vehicle->get_camera_resolution());
+    sprintf(tcp_out_buffer, "%s%2d", PKT_DT_SRV_CAM_RES, remote_vehicle->getCameraResolution());
     img_client.write(tcp_out_buffer);
 }
+#pragma endregion
 
 void VehicleCommunication::cb_mov(Packet p) {
     logger.info("Controller requested movimentation");
@@ -227,4 +245,67 @@ void VehicleCommunication::cb_mov(Packet p) {
     remote_vehicle->move(mstatus);
 
 }
+
+void VehicleCommunication::cb_ir_digital(Packet p) {
+    logger.info("Conteller requested digital IR");
+    if (remote_vehicle->getCInfo().ir_enable) {
+        sprintf(tcp_out_buffer, "%s%1d", PKT_DT_IR_RES_DIGITAL, remote_vehicle->getIR()->digital());
+        cmd_client.write(tcp_out_buffer);
+    } else {
+        cmd_client.write(PKT_ERR_NO_IR);
+    }
+}
+
+void VehicleCommunication::cb_ir_analog(Packet p) {
+    logger.info("Conteller requested analog IR");
+    if (remote_vehicle->getCInfo().ir_enable) {
+        sprintf(tcp_out_buffer, "%s%4d", PKT_DT_IR_RES_ANALOG, remote_vehicle->getIR()->analog());
+        cmd_client.write(tcp_out_buffer);
+    } else {
+        cmd_client.write(PKT_ERR_NO_IR);
+    }
+}
+
+void VehicleCommunication::cb_change_flash(Packet p) {
+    remote_vehicle->getCamera()->set_flash_state(p.get_info_as_uint8());
+}
+
+void VehicleCommunication::cb_request_flash(Packet p) {
+    sprintf(tcp_out_buffer, "%s%1d", PKT_DT_RES_FLASH, remote_vehicle->getCamera()->is_flash_on() ? 1 : 0);
+    cmd_client.write(tcp_out_buffer);
+}
+
+void VehicleCommunication::cb_commence_video_stream(Packet p) {
+    logger.info("Conteller requested video stream");
+
+    if (remote_vehicle->getCInfo().blockVideoStream) {
+        cmd_client.write(PKT_ERR_VIDEO_STREAM_BLOCKED);
+        return;
+    }
+    if (remote_vehicle->getCameraResolution() > remote_vehicle->getCInfo().videoStreamMaxResolution) {
+        cmd_client.write(PKT_ERR_VD_RES_TOO_BIG);
+        return;
+    }
+    uint8_t desiredFPS = p.get_info_as_uint8();
+    if (desiredFPS > remote_vehicle->getCInfo().videoStreamMaxFPS) {
+        cmd_client.write(PKT_ERR_VD_FPS_TOO_GREAT);
+        return;
+    }
+
+    remote_vehicle->setVideoBroadcast(true, desiredFPS);
+    cmd_client.write(PKT_DT_VIDEO_OK);
+}
+
+void VehicleCommunication::cb_end_video_stream(Packet p) {
+    logger.info("Conteller requested the end of the video stream");
+
+    if (!remote_vehicle->isCurrentlyBroadcastingVideo()) {
+        cmd_client.write(PKT_ERR_NO_VIDEO_STREAM);
+        return;
+    }
+
+    remote_vehicle->setVideoBroadcast(false, 0);
+    cmd_client.write(PKT_DT_VIDEO_STREAM_ENDED);
+}
+
 #pragma endregion

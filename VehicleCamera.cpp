@@ -2,6 +2,7 @@
 
 VehicleCamera::VehicleCamera() {
     _current_image_size_code = CAMERA_RESOLUTION_1280_720;
+    _camera_flash_status = false;
 }
 
 VehicleCamera::VehicleCamera(uint8_t camera_frame_size) {
@@ -49,6 +50,8 @@ void VehicleCamera::setup_camera() {
     }
 
     _camera_sensor = esp_camera_sensor_get();
+
+    pinMode(FLASH_GPIO_NUM, OUTPUT);
 }
 
 camera_fb_t* VehicleCamera::get_gamera_fb() {
@@ -69,6 +72,16 @@ bool VehicleCamera::change_camera_resolution(uint8_t new_resolution) {
 
 uint8_t VehicleCamera::get_camera_resolution() {
     return _current_image_size_code;
+}
+
+void VehicleCamera::set_flash_state(uint8_t state) {
+    if (state < 0 || state > 1) return;
+    _camera_flash_status = (state == 1);
+    digitalWrite(FLASH_GPIO_NUM, state);
+}
+
+bool VehicleCamera::is_flash_on() {
+    return _camera_flash_status;
 }
 
 framesize_t camera_frame_sizes[] = {
