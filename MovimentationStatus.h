@@ -1,3 +1,8 @@
+/*
+    RemoteVehicle - library for controlling a remote vehicle using a ESP32CAM board.
+    Created by Luan Negroni Sibinel, August 24, 2021.
+    Released under the MIT license.
+*/
 #ifndef i_MovimentationStatus
 #define i_MovimentationStatus
 
@@ -6,7 +11,7 @@
 
 class MovimentationStatus {
     public:
-        // there are all the possible movimentation values
+        // are all the possible movimentation values
         static const MovimentationStatus FORWARD;
         static const MovimentationStatus BACKWARD;
         static const MovimentationStatus TURN_L;

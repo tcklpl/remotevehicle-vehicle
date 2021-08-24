@@ -1,6 +1,23 @@
 
 # REMOTE VEHICLE: Vehicle
 
+This is a project in 2 parts, this is the vehicle part and there's a controller part, wich you can find [here](https://github.com/tcklpl/remotevehicle-controller).
+This part was developed using C++ and the libraries from Arduino and ESP, using as hardware the ESP32CAM AI-Thinker model.
+> If you are using other ESP32CAM models, you'll have to edit the pins inside [VehicleCamera.h](VehicleCamera.h).
+
+## Summary
+
+1. [Downloading and setting up](#downloading-and-setting-up)
+2. [Basic Project](#basic-project)
+3. [Basic Project with Logging](#basic-project-with-logging)
+4. [Vehicle Creation Info (CInfo)](#cinfo)
+5. [Registering custom callbacks](#registering-custom-callbacks)
+
+
+## Downloading and setting up
+
+You can download the library on the releases page of this repository, after downloading, just go into the Arduino IDE (assuming you're using it), `Sketch > Include Library > Add .ZIP Library...` and select the file you've just downloaded. After this you can follow the examples below.
+
 ## Basic Project
 
 Below is an example of what would be a basic implementation of the library:
@@ -58,9 +75,9 @@ Below is an example of what would be a basic implementation of the library:
 
 **PLEASE NOTE** that in order to see the logging you'll need to start the serial using `Serial.begin(BAUD)`, also, of course, you'll need to set `cinfo.should_log`. Setting up `cinfo.log_severity` is optional, it'll default to SEVERE.
 
-## CInfo (vehicleinfo_t)
+## CInfo
 
-CInfo (Creation Info) is how you configure the library, it contains all the parameters you can edit about the vehicle (without editing its source of course). I chose to do this because otherwise there would be multiple long ass constructors.
+CInfo (Creation Info or `vehicleinfo_t`) is how you configure the library, it contains all the parameters you can edit about the vehicle (without editing its source of course). I chose to do this because otherwise there would be multiple long ass constructors.
 Please note that some of the parameters are obrigatory, those need to be filled in order to everything to work.
 
 Field        | Obrigatory | Default Value | Description | Type | Values Accepted
@@ -97,7 +114,7 @@ First extend `Listener`:
 
     }
 
-then you'll create your callbacks (name them whaterver you want), just be sure that your callback function has one Packet parameter:
+Then you'll create your callbacks (name them whaterver you want), just be sure that your callback function has only one parameter and it's `Packet`:
     
     #include "Listener.h"
     #include "Packet.h"
@@ -106,3 +123,22 @@ then you'll create your callbacks (name them whaterver you want), just be sure t
         public:
             void callback_connection_attempt(Packet p);
     }
+
+After this, you'll need to register the callback, this can be done by doing so:
+
+    vehicle->getCommunication()->registerCustomCallback(...);
+
+The parameters for `registerCustomCallback` are `Callback<Listener>` and `int`, that represent in order, the callback that you previously created and the packet type that you'll be listening. These values are defined in [`Packet.h`](Packet.h#L66) (after the comment `packets that can be received`).
+
+To create a `Callback<Listener>`, you'll need to cast your class and function the the parent for some reason, I don't know why but it doesn't accept a child on a parent parameter. So you can do this by doing so:
+
+    #include "Callback.h"
+
+    MyListener ml;
+    Callback *cb = new Callback<Listener>((Listener*) &ml, (void (Listener::*)(Packet)) &MyListener::callback_connection_attempt);
+
+Ugly, I know. Contact me if you have a better way of doing this please. But now you can register the final callback:
+
+    vehicle->getCommunication()->registerCustomCallback(cb, PKT_REQ_CON);
+
+And now `callback_connection_attempt(Packet p)` will be called when the controller requests the start of a connection.

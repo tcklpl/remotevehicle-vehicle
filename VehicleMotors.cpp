@@ -1,3 +1,8 @@
+/*
+    RemoteVehicle - library for controlling a remote vehicle using a ESP32CAM board.
+    Created by Luan Negroni Sibinel, August 24, 2021.
+    Released under the MIT license.
+*/
 #include "VehicleMotors.h"
 
 VehicleMotors::VehicleMotors(uint8_t left_a, uint8_t left_b, uint8_t right_a, uint8_t right_b) 

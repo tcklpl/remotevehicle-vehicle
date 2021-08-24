@@ -1,3 +1,8 @@
+/*
+    RemoteVehicle - library for controlling a remote vehicle using a ESP32CAM board.
+    Created by Luan Negroni Sibinel, August 24, 2021.
+    Released under the MIT license.
+*/
 #include "Packet.h"
 
 /* these are the packets that the server can recieve from the client, as you can see they follow

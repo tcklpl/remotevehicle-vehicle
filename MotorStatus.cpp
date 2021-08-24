@@ -1,3 +1,8 @@
+/*
+    RemoteVehicle - library for controlling a remote vehicle using a ESP32CAM board.
+    Created by Luan Negroni Sibinel, August 24, 2021.
+    Released under the MIT license.
+*/
 #include "MotorStatus.h"
 
 MotorStatus::MotorStatus(uint8_t a, uint8_t b) {

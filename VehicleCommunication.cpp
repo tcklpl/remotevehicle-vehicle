@@ -1,3 +1,8 @@
+/*
+    RemoteVehicle - library for controlling a remote vehicle using a ESP32CAM board.
+    Created by Luan Negroni Sibinel, August 24, 2021.
+    Released under the MIT license.
+*/
 #include "VehicleCommunication.h"
 #include "Esp.h"
 
@@ -156,6 +161,11 @@ void VehicleCommunication::loop() {
         
     clearBuffers();
 }
+
+void VehicleCommunication::registerCustomCallback(Callback<Listener> *cb, int packet_type) {
+    parser.register_callback(cb, packet_type, 0);
+}
+
 #pragma endregion
 
 /**
