@@ -80,7 +80,7 @@ Below is an example of what would be a basic implementation of the library:
 CInfo (Creation Info or `vehicleinfo_t`) is how you configure the library, it contains all the parameters you can edit about the vehicle (without editing its source of course). I chose to do this because otherwise there would be multiple long ass constructors.
 Please note that some of the parameters are obrigatory, those need to be filled in order to everything to work.
 
-Field        | Obrigatory | Default Value | Description | Type | Values Accepted
+Field        | Required | Default Value | Description | Type | Values Accepted
 -------------|------------|-------------|-|------|----------------
 wssid        | ✔      |  | The WiFi network SSID | char* | array of characters
 wpass        | ✔      |  | The WiFi network Password | char * | array of characters
